@@ -1,0 +1,33 @@
+name: Daily LinkedIn Post Generator
+
+on:
+  schedule:
+    # 매일 UTC 00:00 (한국 시간 아침 9시) 실행
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install google-generativeai feedparser pygithub python-dotenv beautifulsoup4
+
+      - name: Run Daily Bot
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/daily_bot.py
