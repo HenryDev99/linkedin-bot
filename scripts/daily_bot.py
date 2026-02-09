@@ -38,23 +38,53 @@ def fetch_latest_news():
             
     return "\n".join(news_list)
 
+def get_best_model():
+    """사용 가능한 모델 중 가장 최신/성능 좋은 모델을 자동으로 선택합니다."""
+    try:
+        available_models = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                available_models.append(m.name)
+        
+        print(f"📋 사용 가능한 모델 목록: {available_models}")
+
+        # 우선순위: 1.5 Pro > 1.5 Flash > 1.0 Pro
+        for model in available_models:
+            if 'gemini-1.5-pro' in model:
+                return model
+        
+        for model in available_models:
+            if 'gemini-1.5-flash' in model:
+                return model
+                
+        for model in available_models:
+            if 'gemini-pro' in model:
+                return model
+                
+        # 아무것도 못 찾으면 기본값
+        return 'models/gemini-pro'
+        
+    except Exception as e:
+        print(f"⚠️ 모델 목록 조회 실패: {e}")
+        return 'models/gemini-pro'
+
 def generate_post(news_data):
     """Gemini가 주제를 선정하고 글을 작성합니다."""
-    # Google API 설정
+    if not GOOGLE_API_KEY:
+        print("❌ API Key가 없습니다.")
+        return None
+        
     genai.configure(api_key=GOOGLE_API_KEY)
     
-    # 모델 선택 (사용 가능한 최신 모델 순차적 시도)
+    # 동적으로 최적의 모델 선택
+    best_model_name = get_best_model()
+    print(f"🤖 선택된 모델: {best_model_name}")
+    
     try:
-        # 1순위: 최신 프로 모델 (요청하신 것과 가장 유사한 강력한 모델)
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        model = genai.GenerativeModel(best_model_name)
     except Exception as e:
-        print(f"gemini-1.5-pro 로드 실패: {e}")
-        try:
-            # 2순위: 구글의 기본 안정화 모델
-            model = genai.GenerativeModel('gemini-pro')
-        except Exception as e2:
-            print(f"gemini-pro 로드 실패: {e2}")
-            return None
+        print(f"❌ 모델 로드 실패 ({best_model_name}): {e}")
+        return None
 
     today_date = datetime.now().strftime("%Y년 %m월 %d일")
     
@@ -85,12 +115,11 @@ def generate_post(news_data):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        print(f"AI 글 작성 중 오류: {e}")
+        print(f"❌ 글 생성 실패: {e}")
         return None
 
 def send_telegram_message(content):
     """작성된 글을 텔레그램으로 전송합니다."""
-    # POST 대신 GET 방식으로 변경 (확실한 방법)
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     params = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -108,7 +137,7 @@ def send_telegram_message(content):
         print(f"텔레그램 전송 중 오류: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Daily LinkedIn Bot (Telegram) 시작!")
+    print("🚀 Daily LinkedIn Bot (Auto-Model Selection) 시작!")
     
     if not GOOGLE_API_KEY:
         print("❌ GOOGLE_API_KEY 환경변수가 설정되지 않았습니다.")
@@ -123,7 +152,7 @@ if __name__ == "__main__":
         if news_data:
             print(f"✅ {len(news_data.splitlines())}개의 뉴스를 수집했습니다.")
             
-            # 2. AI 글 작성
+            # 2. AI 글 작성 (모델 자동 선택)
             print("✍️ Gemini가 글을 작성 중입니다...")
             post_content = generate_post(news_data)
             
