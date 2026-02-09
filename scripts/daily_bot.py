@@ -85,20 +85,20 @@ def generate_post(news_data):
 
 def send_telegram_message(content):
     """작성된 글을 텔레그램으로 전송합니다."""
+    # POST 대신 GET 방식으로 변경 (확실한 방법)
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {
+    params = {
         "chat_id": TELEGRAM_CHAT_ID,
-        "text": content,
-        # 마크다운 파싱 에러 방지를 위해 HTML 모드 사용 권장 또는 파싱 없이 전송
-        # 여기서는 안전하게 일반 텍스트로 보냅니다. (마크다운 특수문자 충돌 방지)
+        "text": content
     }
     
     try:
-        response = requests.post(url, json=payload)
+        response = requests.get(url, params=params)
+        
         if response.status_code == 200:
             print("✅ 텔레그램 메시지 전송 성공!")
         else:
-            print(f"❌ 전송 실패: {response.text}")
+            print(f"❌ 전송 실패: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"텔레그램 전송 중 오류: {e}")
 
