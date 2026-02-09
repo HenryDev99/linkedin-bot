@@ -1,13 +1,13 @@
 import os
 import feedparser
+import requests
 import google.generativeai as genai
-from github import Github
 from datetime import datetime
 
 # 1. 설정 및 시크릿 로드
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-GITHUB_TOKEN = os.environ.get("GH_TOKEN")
-REPO_NAME = os.environ.get("GITHUB_REPOSITORY")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 # 2. 트렌드 소스 (RSS)
 RSS_FEEDS = [
@@ -83,39 +83,48 @@ def generate_post(news_data):
         print(f"AI 글 작성 중 오류: {e}")
         return None
 
-def create_github_issue(content):
-    """작성된 글을 GitHub Issue로 등록합니다."""
+def send_telegram_message(content):
+    """작성된 글을 텔레그램으로 전송합니다."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": content,
+        # 마크다운 파싱 에러 방지를 위해 HTML 모드 사용 권장 또는 파싱 없이 전송
+        # 여기서는 안전하게 일반 텍스트로 보냅니다. (마크다운 특수문자 충돌 방지)
+    }
+    
     try:
-        g = Github(GITHUB_TOKEN)
-        repo = g.get_repo(REPO_NAME)
-        
-        today = datetime.now().strftime("%Y-%m-%d")
-        title = f"📅 [Gemini] {today} 오늘의 프론트엔드 링크드인 초안"
-        
-        repo.create_issue(title=title, body=content)
-        print(f"✅ GitHub Issue가 생성되었습니다: {title}")
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print("✅ 텔레그램 메시지 전송 성공!")
+        else:
+            print(f"❌ 전송 실패: {response.text}")
     except Exception as e:
-        print(f"GitHub Issue 생성 실패: {e}")
+        print(f"텔레그램 전송 중 오류: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Daily LinkedIn Bot (Powered by Gemini) 시작!")
+    print("🚀 Daily LinkedIn Bot (Telegram) 시작!")
     
     if not GOOGLE_API_KEY:
         print("❌ GOOGLE_API_KEY 환경변수가 설정되지 않았습니다.")
-    elif not GITHUB_TOKEN:
-        print("❌ GH_TOKEN 환경변수가 설정되지 않았습니다.")
-    elif not REPO_NAME:
-        print("❌ GITHUB_REPOSITORY 환경변수가 설정되지 않았습니다.")
+    elif not TELEGRAM_BOT_TOKEN:
+        print("❌ TELEGRAM_BOT_TOKEN 환경변수가 설정되지 않았습니다.")
+    elif not TELEGRAM_CHAT_ID:
+        print("❌ TELEGRAM_CHAT_ID 환경변수가 설정되지 않았습니다.")
     else:
+        # 1. 뉴스 수집
         news_data = fetch_latest_news()
         
         if news_data:
             print(f"✅ {len(news_data.splitlines())}개의 뉴스를 수집했습니다.")
+            
+            # 2. AI 글 작성
             print("✍️ Gemini가 글을 작성 중입니다...")
             post_content = generate_post(news_data)
             
             if post_content:
-                create_github_issue(post_content)
+                # 3. 결과 전송 (텔레그램)
+                send_telegram_message(post_content)
             else:
                 print("❌ 글 생성에 실패했습니다.")
         else:

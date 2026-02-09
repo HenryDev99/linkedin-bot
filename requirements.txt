@@ -1,5 +1,5 @@
 google-generativeai
 feedparser
-pygithub
+requests
 python-dotenv
 beautifulsoup4
