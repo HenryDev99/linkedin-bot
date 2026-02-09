@@ -43,13 +43,18 @@ def generate_post(news_data):
     # Google API 설정
     genai.configure(api_key=GOOGLE_API_KEY)
     
-    # 모델 선택 (gemini-pro 또는 gemini-1.5-flash 등)
+    # 모델 선택 (사용 가능한 최신 모델 순차적 시도)
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 1순위: 최신 프로 모델 (요청하신 것과 가장 유사한 강력한 모델)
+        model = genai.GenerativeModel('gemini-1.5-pro')
     except Exception as e:
-        # 모델 로드 실패 시 기본 모델 시도
-        print(f"모델 로드 실패, gemini-pro 시도: {e}")
-        model = genai.GenerativeModel('gemini-pro')
+        print(f"gemini-1.5-pro 로드 실패: {e}")
+        try:
+            # 2순위: 구글의 기본 안정화 모델
+            model = genai.GenerativeModel('gemini-pro')
+        except Exception as e2:
+            print(f"gemini-pro 로드 실패: {e2}")
+            return None
 
     today_date = datetime.now().strftime("%Y년 %m월 %d일")
     
