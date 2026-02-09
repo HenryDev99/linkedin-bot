@@ -111,7 +111,7 @@ def generate_post(news_data):
         - **Hook:** "다들 이거 보셨나요?", "와, 이게 진짜 나오네요." 처럼 자연스럽게 시작.
         - **Insight:** 뉴스 내용을 요약하되, 내 생각이나 경험을 섞어서 설명.
         - **Action Item:** 실무 팁 3가지 (불렛 포인트)
-        - **Conclusion:** 가벼운 마무리 및 댓글 유도.
+        - **Conclusion:** "오늘도 즐코하세요!", "도움 되셨길 바랍니다." 처럼 **담백하고 깔끔한 마무리.** (질문이나 억지스러운 댓글 유도 금지)
     - **참고 링크:** 선정된 뉴스의 원본 링크를 맨 아래에 "🔗 원문 보기"로 남겨주세요.
     - **해시태그:** #Frontend #WebDev #트렌드 등 5개
     """
@@ -142,7 +142,7 @@ def send_telegram_message(content):
         print(f"텔레그램 전송 중 오류: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Daily LinkedIn Bot (Natural Tone Ver.) 시작!")
+    print("🚀 Daily LinkedIn Bot (Clean Ending Ver.) 시작!")
     
     if not GOOGLE_API_KEY:
         print("❌ GOOGLE_API_KEY 환경변수가 설정되지 않았습니다.")
